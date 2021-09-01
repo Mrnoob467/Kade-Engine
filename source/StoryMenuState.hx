@@ -14,7 +14,7 @@ import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import lime.net.curl.CURLCode;
 
-#if windows
+#if desktop
 import Discord.DiscordClient;
 #end
 
@@ -31,7 +31,7 @@ class StoryMenuState extends MusicBeatState
 			['Bopeebo', 'Fresh', 'Dad Battle'],
 			['Spookeez', 'South', "Monster"],
 			['Pico', 'Philly Nice', "Blammed"],
-			['Satin Panties', "High", "Milf"],
+			['Satin Panties', "High", "M.I.L.F"],
 			['Cocoa', 'Eggnog', 'Winter Horrorland'],
 			['Senpai', 'Roses', 'Thorns']
 		];
@@ -90,7 +90,7 @@ class StoryMenuState extends MusicBeatState
 	{
 		weekUnlocked = unlockWeeks();
 
-		#if windows
+		#if desktop
 		// Updating Discord Rich Presence
 		DiscordClient.changePresence("In the Story Mode Menu", null);
 		#end
@@ -146,10 +146,7 @@ class StoryMenuState extends MusicBeatState
 			grpWeekText.add(weekThing);
 
 			weekThing.screenCenter(X);
-			if(FlxG.save.data.antialiasing)
-				{
-					weekThing.antialiasing = true;
-				}
+			weekThing.antialiasing = FlxG.save.data.antialiasing;
 			// weekThing.updateHitbox();
 
 			// Needs an offset thingie
@@ -161,10 +158,7 @@ class StoryMenuState extends MusicBeatState
 				lock.animation.addByPrefix('lock', 'lock');
 				lock.animation.play('lock');
 				lock.ID = i;
-				if(FlxG.save.data.antialiasing)
-					{
-						lock.antialiasing = true;
-					}
+				lock.antialiasing = FlxG.save.data.antialiasing;
 				grpLocks.add(lock);
 			}
 		}
@@ -358,7 +352,7 @@ class StoryMenuState extends MusicBeatState
 			PlayState.storyPlaylist = weekData()[curWeek];
 			PlayState.isStoryMode = true;
 			selectedWeek = true;
-
+			PlayState.songMultiplier = 1;
 
 			PlayState.storyDifficulty = curDifficulty;
 
@@ -367,6 +361,7 @@ class StoryMenuState extends MusicBeatState
 			switch (songFormat) {
 				case 'Dad-Battle': songFormat = 'Dadbattle';
 				case 'Philly-Nice': songFormat = 'Philly';
+				case 'M.I.L.F': songFormat = 'Milf';
 			}
 
 			var poop:String = Highscore.formatSong(songFormat, curDifficulty);
@@ -375,7 +370,7 @@ class StoryMenuState extends MusicBeatState
 			PlayState.shits = 0;
 			PlayState.goods = 0;
 			PlayState.campaignMisses = 0;
-			PlayState.SONG = Song.loadFromJson(poop, PlayState.storyPlaylist[0]);
+			PlayState.SONG = Song.conversionChecks(Song.loadFromJson(poop, PlayState.storyPlaylist[0]));
 			PlayState.storyWeek = curWeek;
 			PlayState.campaignScore = 0;
 			new FlxTimer().start(1, function(tmr:FlxTimer)
@@ -477,7 +472,7 @@ class StoryMenuState extends MusicBeatState
 
 	public static function unlockNextWeek(week:Int):Void
 	{
-		if(week <= weekData().length - 1 && FlxG.save.data.weekUnlocked == week)
+		if(week <= weekData().length - 1 /*&& FlxG.save.data.weekUnlocked == week*/) // fuck you, unlocks all weeks
 		{
 			weekUnlocked.push(true);
 			trace('Week ' + week + ' beat (Week ' + (week + 1) + ' unlocked)');
@@ -491,8 +486,16 @@ class StoryMenuState extends MusicBeatState
 	{
 		super.beatHit();
 
-		grpWeekCharacters.members[0].bopHead();
-		grpWeekCharacters.members[1].bopHead();
-		grpWeekCharacters.members[2].bopHead();
+		if (curBeat % 2 == 0)
+		{
+			grpWeekCharacters.members[0].bopHead();
+			grpWeekCharacters.members[1].bopHead();
+		}
+		else if (weekCharacters[curWeek][0] == 'spooky' || weekCharacters[curWeek][0] == 'gf')
+			grpWeekCharacters.members[0].bopHead();
+
+		if (weekCharacters[curWeek][2] == 'spooky' || weekCharacters[curWeek][2] == 'gf')
+			grpWeekCharacters.members[2].bopHead();
+
 	}
 }

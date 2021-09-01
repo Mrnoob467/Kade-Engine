@@ -2,7 +2,7 @@ package;
 
 import flixel.input.gamepad.FlxGamepad;
 import openfl.Lib;
-#if windows
+#if desktop
 import llua.Lua;
 #end
 import Controls.Control;
@@ -130,6 +130,7 @@ class PauseSubState extends MusicBeatSubstate
 		switch (songLowercase) {
 			case 'dad-battle': songLowercase = 'dadbattle';
 			case 'philly-nice': songLowercase = 'philly';
+			case 'm.i.l.f': songLowercase = 'milf';
 		}
 		var songPath = 'assets/data/' + songLowercase + '/';
 
@@ -209,6 +210,7 @@ class PauseSubState extends MusicBeatSubstate
 		{
 			var daSelected:String = menuItems[curSelected];
 
+			
 			switch (daSelected)
 			{
 				case "Resume":
@@ -221,7 +223,9 @@ class PauseSubState extends MusicBeatSubstate
 						PlayState.instance.remove(PlayState.instance.videoSprite);
 						PlayState.instance.removedVideo = true;
 					}
+					PlayState.instance.clean();
 					FlxG.resetState();
+					PlayState.stageTesting = false;
 				case "Exit to menu":
 					PlayState.startTime = 0;
 					if (PlayState.instance.useVideo)
@@ -237,7 +241,8 @@ class PauseSubState extends MusicBeatSubstate
 						FlxG.save.data.downscroll = false;
 					}
 					PlayState.loadRep = false;
-					#if windows
+					PlayState.stageTesting = false;
+					#if desktop
 					if (PlayState.luaModchart != null)
 					{
 						PlayState.luaModchart.die();
@@ -247,6 +252,8 @@ class PauseSubState extends MusicBeatSubstate
 					if (FlxG.save.data.fpsCap > 290)
 						(cast (Lib.current.getChildAt(0), Main)).setFPSCap(290);
 					
+					PlayState.instance.clean();
+
 					if (PlayState.isStoryMode)
 						FlxG.switchState(new StoryMenuState());
 					else

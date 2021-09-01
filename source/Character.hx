@@ -26,10 +26,7 @@ class Character extends FlxSprite
 		this.isPlayer = isPlayer;
 
 		var tex:FlxAtlasFrames;
-		if(FlxG.save.data.antialiasing)
-			{
-				antialiasing = true;
-			}
+		antialiasing = FlxG.save.data.antialiasing;
 
 		switch (curCharacter)
 		{
@@ -103,11 +100,11 @@ class Character extends FlxSprite
 				// DAD ANIMATION LOADING CODE
 				tex = Paths.getSparrowAtlas('DADDY_DEAREST','shared',true);
 				frames = tex;
-				animation.addByPrefix('idle', 'Dad idle dance', 24);
-				animation.addByPrefix('singUP', 'Dad Sing Note UP', 24);
-				animation.addByPrefix('singRIGHT', 'Dad Sing Note RIGHT', 24);
-				animation.addByPrefix('singDOWN', 'Dad Sing Note DOWN', 24);
-				animation.addByPrefix('singLEFT', 'Dad Sing Note LEFT', 24);
+				animation.addByPrefix('idle', 'Dad idle dance', 24, false);
+				animation.addByPrefix('singUP', 'Dad Sing Note UP', 24, false);
+				animation.addByPrefix('singRIGHT', 'Dad Sing Note RIGHT', 24, false);
+				animation.addByPrefix('singDOWN', 'Dad Sing Note DOWN', 24, false);
+				animation.addByPrefix('singLEFT', 'Dad Sing Note LEFT', 24, false);
 
 				loadOffsetFile(curCharacter);
 
@@ -152,6 +149,7 @@ class Character extends FlxSprite
 				// ANIMATION IS CALLED MOM LEFT POSE BUT ITS FOR THE RIGHT
 				// CUZ DAVE IS DUMB!
 				animation.addByPrefix('singRIGHT', 'Mom Pose Left', 24, false);
+				animation.addByIndices('idleHair', 'Mom Idle', [10, 11, 12, 13], "", 24, true);
 
 				loadOffsetFile(curCharacter);
 
@@ -181,7 +179,7 @@ class Character extends FlxSprite
 			case 'pico':
 				tex = Paths.getSparrowAtlas('Pico_FNF_assetss','shared',true);
 				frames = tex;
-				animation.addByPrefix('idle', "Pico Idle Dance", 24);
+				animation.addByPrefix('idle', "Pico Idle Dance", 24, false);
 				animation.addByPrefix('singUP', 'pico Up note0', 24, false);
 				animation.addByPrefix('singDOWN', 'Pico Down Note0', 24, false);
 				if (isPlayer)
@@ -269,6 +267,7 @@ class Character extends FlxSprite
 				animation.addByPrefix('singLEFTmiss', 'BF NOTE LEFT MISS', 24, false);
 				animation.addByPrefix('singRIGHTmiss', 'BF NOTE RIGHT MISS', 24, false);
 				animation.addByPrefix('singDOWNmiss', 'BF NOTE DOWN MISS', 24, false);
+				animation.addByIndices('idleHair', 'BF idle dance', [10, 11, 12, 13], "", 24, true);
 
 				loadOffsetFile(curCharacter);
 				playAnim('idle');
@@ -348,7 +347,7 @@ class Character extends FlxSprite
 				antialiasing = false;
 
 			case 'spirit':
-				frames = Paths.getPackerAtlas('spirit','shared',false);
+				frames = Paths.getPackerAtlas('spirit','shared',true);
 				animation.addByPrefix('idle', "idle spirit_", 24, false);
 				animation.addByPrefix('singUP', "up_", 24, false);
 				animation.addByPrefix('singRIGHT', "right_", 24, false);
@@ -385,7 +384,7 @@ class Character extends FlxSprite
 
 		dance();
 
-		if (isPlayer)
+		if (isPlayer && frames != null)
 		{
 			flipX = !flipX;
 
@@ -408,9 +407,9 @@ class Character extends FlxSprite
 		}
 	}
 
-	public function loadOffsetFile(character:String)
+	public function loadOffsetFile(character:String, library:String = 'shared')
 	{
-		var offset:Array<String> = CoolUtil.coolTextFile(Paths.txt('images/characters/' + character + "Offsets", 'shared'));
+		var offset:Array<String> = CoolUtil.coolTextFile(Paths.txt('images/characters/' + character + "Offsets", library));
 
 		for (i in 0...offset.length)
 		{
@@ -421,20 +420,26 @@ class Character extends FlxSprite
 
 	override function update(elapsed:Float)
 	{
-		if (!curCharacter.startsWith('bf'))
+		if (this != PlayState.boyfriend)
 		{
 			if (animation.curAnim.name.startsWith('sing'))
 			{
 				holdTimer += elapsed;
 			}
 
+			if (curCharacter.endsWith('-car') && !animation.curAnim.name.startsWith('sing') && animation.curAnim.finished && animation.getByName('idleHair') != null)
+				playAnim('idleHair');
+
 			var dadVar:Float = 4;
 
 			if (curCharacter == 'dad')
 				dadVar = 6.1;
+			else if (curCharacter == 'gf' || curCharacter == 'spooky')
+				dadVar = 4.1; //fix double dances
 			if (holdTimer >= Conductor.stepCrochet * dadVar * 0.001)
 			{
-				trace('dance');
+				if (curCharacter == 'gf' || curCharacter == 'spooky')
+					playAnim('danceLeft'); //overridden by dance correctly later
 				dance();
 				holdTimer = 0;
 			}
@@ -444,7 +449,10 @@ class Character extends FlxSprite
 		{
 			case 'gf':
 				if (animation.curAnim.name == 'hairFall' && animation.curAnim.finished)
+				{
+					danced = true;
 					playAnim('danceRight');
+				}
 		}
 
 		super.update(elapsed);
@@ -455,14 +463,14 @@ class Character extends FlxSprite
 	/**
 	 * FOR GF DANCING SHIT
 	 */
-	public function dance(forced:Bool = false)
+	public function dance(forced:Bool = false, altAnim:Bool = false)
 	{
 		if (!debugMode)
 		{
 			switch (curCharacter)
 			{
 				case 'gf' | 'gf-christmas' | 'gf-car' | 'gf-pixel':
-					if (!animation.curAnim.name.startsWith('hair'))
+					if (!animation.curAnim.name.startsWith('hair') && !animation.curAnim.name.startsWith('sing'))
 					{
 						danced = !danced;
 
@@ -472,20 +480,42 @@ class Character extends FlxSprite
 							playAnim('danceLeft');
 					}
 				case 'spooky':
-					danced = !danced;
+					if (!animation.curAnim.name.startsWith('sing'))
+					{
+						danced = !danced;
 
-					if (danced)
-						playAnim('danceRight');
-					else
-						playAnim('danceLeft');
+						if (danced)
+							playAnim('danceRight');
+						else
+							playAnim('danceLeft');
+					}
+				/*
+				// new dance code is gonna end up cutting off animation with the idle
+				// so here's example code that'll fix it. just adjust it to ya character 'n shit
+				case 'custom character':
+					if (!animation.curAnim.name.endsWith('custom animation'))
+						playAnim('idle');
+				*/
 				default:
-					playAnim('idle', forced);
+					if (altAnim && animation.getByName('idle-alt') != null)
+						playAnim('idle-alt', forced);
+					else
+						playAnim('idle', forced);
 			}
 		}
 	}
 
 	public function playAnim(AnimName:String, Force:Bool = false, Reversed:Bool = false, Frame:Int = 0):Void
 	{
+
+		if (AnimName.endsWith('alt') && animation.getByName(AnimName) == null)
+		{
+			#if debug
+			FlxG.log.warn(['Such alt animation doesnt exist: ' + AnimName]);
+			#end
+			AnimName = AnimName.split('-')[0];
+		}
+
 		animation.play(AnimName, Force, Reversed, Frame);
 
 		var daOffset = animOffsets.get(AnimName);
